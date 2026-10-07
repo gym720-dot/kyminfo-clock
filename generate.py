@@ -124,6 +124,7 @@ def main():
         html = render(slug, data)
         if not slug:
             html = html.replace('<head>', '<head><meta name="google-site-verification" content="0DlnOeZZ_kog3CSXY6uLdI5A67mBCZHQwwUc4D_Ava0">', 1)
+            html = html.replace('<head>', '<head><meta name="naver-site-verification" content="9d0a37f2cb1f15306415017e5b3dc4611bbe0b1c">', 1)
         target.write_text(html, encoding="utf-8")
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{BASE}/{slug + "/" if slug else ""}</loc></url>\n' for slug in PAGES) + '</urlset>\n'
     (ROOT / "sitemap.xml").write_text(sitemap, encoding="utf-8")
