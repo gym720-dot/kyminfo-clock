@@ -95,13 +95,28 @@
     let selected = read('cities', ['Asia/Seoul', 'America/New_York', 'Europe/London']); selected = selected.filter((zone) => CITIES.some((city) => city[1] === zone)); if (!selected.length) selected = ['Asia/Seoul'];
     function parts(zone, now) { const values = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(now).filter((p) => p.type !== 'literal').map((p) => [p.type, Number(p.value)])); return values; }
     function offset(zone, now) { const p = parts(zone, now); return (Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(now.getTime() / 1000) * 1000) / 3600000; }
+    function currentCityInput(zone) { const p = parts(zone, new Date()); return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`; }
+    function renderMeeting() {
+      const entered = $('meeting-at').value; if (!entered) { $('meeting-result').textContent = '회의 시작 시간을 입력해 주세요.'; return; }
+      const [year, month, day, hour, minute] = entered.split(/[-T:]/).map(Number);
+      const from = $('compare-from').value, to = $('compare-to').value;
+      const naive = Date.UTC(year, month - 1, day, hour, minute);
+      let instant = naive - offset(from, new Date(naive)) * 3600000;
+      instant = naive - offset(from, new Date(instant)) * 3600000;
+      const actual = parts(from, new Date(instant));
+      if ([actual.year, actual.month, actual.day, actual.hour, actual.minute].join(',') !== [year, month, day, hour, minute].join(',')) { $('meeting-result').textContent = '선택한 시각은 서머타임 전환과 겹칠 수 있습니다. 다른 시간을 선택해 주세요.'; return; }
+      const destination = new Intl.DateTimeFormat('ko-KR', { timeZone: to, dateStyle: 'full', timeStyle: 'short', hourCycle: 'h23' }).format(new Date(instant));
+      const targetHour = parts(to, new Date(instant)).hour;
+      const workHours = hour >= 9 && hour < 18 && targetHour >= 9 && targetHour < 18;
+      $('meeting-result').textContent = `${name(from)} ${entered.replace('T', ' ')} → ${name(to)} ${destination}. ${workHours ? '두 도시 모두 09~18시 시간대입니다.' : '적어도 한 도시는 09~18시 시간대 밖입니다.'}`;
+    }
     function render() {
       const now = new Date(); const list = $('city-list'); list.innerHTML = selected.map((zone) => { const date = new Intl.DateTimeFormat('ko-KR', { timeZone: zone, month: 'long', day: 'numeric', weekday: 'short' }).format(now); const time = new Intl.DateTimeFormat('ko-KR', { timeZone: zone, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(now); return `<div class="city-card"><div class="city-top"><span>${name(zone)}</span><button class="icon-button" type="button" data-remove-city="${zone}" aria-label="${name(zone)} 삭제">×</button></div><strong>${time}</strong><small>${date}</small></div>`; }).join('');
-      const from = $('compare-from').value, to = $('compare-to').value; const diff = offset(to, now) - offset(from, now); const abs = Math.abs(diff); const hours = Math.floor(abs), minutes = Math.round((abs - hours) * 60); const relation = diff === 0 ? '시차가 없습니다.' : `${name(to)}이(가) ${name(from)}보다 ${hours ? `${hours}시간` : ''}${minutes ? ` ${minutes}분` : ''} ${diff > 0 ? '빠릅니다.' : '느립니다.'}`; $('compare-result').textContent = relation;
+      const from = $('compare-from').value, to = $('compare-to').value; const diff = offset(to, now) - offset(from, now); const abs = Math.abs(diff); const hours = Math.floor(abs), minutes = Math.round((abs - hours) * 60); const relation = diff === 0 ? '시차가 없습니다.' : `${name(to)} 시간은 ${name(from)}보다 ${hours ? `${hours}시간` : ''}${minutes ? ` ${minutes}분` : ''} ${diff > 0 ? '빠릅니다.' : '느립니다.'}`; $('compare-result').textContent = relation; renderMeeting();
     }
     $('add-city').addEventListener('click', () => { const zone = $('city-add').value; if (selected.includes(zone)) return toast('이미 표시 중인 도시입니다.'); selected.push(zone); write('cities', selected); render(); });
     $('city-list').addEventListener('click', (event) => { const button = event.target.closest('[data-remove-city]'); if (!button) return; selected = selected.filter((zone) => zone !== button.dataset.removeCity); write('cities', selected); render(); });
-    $('compare-from').addEventListener('change', render); $('compare-to').addEventListener('change', render); render(); setInterval(render, 1000);
+    $('compare-from').addEventListener('change', () => { $('meeting-at').value = currentCityInput($('compare-from').value); render(); }); $('compare-to').addEventListener('change', render); $('meeting-at').addEventListener('change', renderMeeting); $('meeting-at').value = currentCityInput($('compare-from').value); render(); setInterval(render, 1000);
   }
 
   function setupAlarm() {
