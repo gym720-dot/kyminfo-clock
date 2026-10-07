@@ -69,7 +69,7 @@ PAGES = {
         "heading": "정해둔 시간에만 집중하세요.",
         "intro": "짧은 휴식, 요리, 발표 연습까지 원하는 시간을 간편하게 재세요.",
         "tool": '''<section class="workspace"><div class="preset-row" aria-label="타이머 빠른 설정"><button data-preset="60" type="button">1분</button><button data-preset="180" type="button">3분</button><button data-preset="300" type="button">5분</button><button data-preset="600" type="button">10분</button><button data-preset="900" type="button">15분</button><button data-preset="1800" type="button">30분</button><button data-preset="3600" type="button">1시간</button></div><div id="timer-display" class="timer-digits" role="timer" aria-live="off">05:00</div><p id="timer-hint" class="workspace-hint">시간을 정하고 시작해 보세요.</p><div class="button-row"><button id="timer-start" class="button button-primary" type="button">시작</button><button id="timer-reset" class="button button-ghost" type="button">초기화</button></div><div class="settings-grid timer-inputs"><label>시간<input id="timer-hours" type="number" min="0" max="99" value="0" inputmode="numeric"></label><label>분<input id="timer-minutes" type="number" min="0" max="59" value="5" inputmode="numeric"></label><label>초<input id="timer-seconds" type="number" min="0" max="59" value="0" inputmode="numeric"></label></div><p class="field-note">시간을 수정하면 현재 타이머는 초기화됩니다. 브라우저가 닫혀 있으면 종료 알림은 울리지 않습니다.</p></section>''',
-        "guide": '''<h2>타이머 사용법</h2><p>자주 쓰는 시간 버튼을 누르거나 시·분·초를 직접 입력한 뒤 시작하세요. 진행 중에는 잠시 멈추고 다시 시작할 수 있습니다. 타이머는 기기의 시각을 기준으로 남은 시간을 계산하므로 백그라운드 탭의 화면 갱신이 늦어져도 돌아오면 남은 시간을 다시 맞춥니다.</p><h3>온라인 타이머와 집중 타이머의 차이</h3><p>일반 타이머는 한 번의 카운트다운에 적합합니다. 집중 시간과 휴식을 자동으로 번갈아 쓰려면 집중 타이머를 이용하세요.</p>''',
+        "guide": '''<h2>타이머 사용법</h2><p>자주 쓰는 시간 버튼을 누르거나 시·분·초를 직접 입력한 뒤 시작하세요. 진행 중에는 잠시 멈추고 다시 시작할 수 있습니다. 타이머는 기기의 시각을 기준으로 남은 시간을 계산하므로 백그라운드 탭의 화면 갱신이 늦어져도 돌아오면 남은 시간을 다시 맞춥니다.</p><h3>온라인 타이머와 집중 타이머의 차이</h3><p>일반 타이머는 한 번의 카운트다운에 적합합니다. 집중 시간과 휴식 단계를 차례로 관리하려면 집중 타이머를 이용하세요. 각 단계가 끝나면 화면이 다음 단계로 바뀌며, 새 단계의 시작 버튼을 눌러 진행할 수 있습니다.</p>''',
     },
     "stopwatch": {
         "name": "스톱워치",
@@ -88,7 +88,7 @@ PAGES = {
         "eyebrow": "ABOUT KYMI TIME",
         "heading": "시간을 확인하고, 더 잘 쓰도록.",
         "intro": "키미 타임은 일상에서 반복해 사용하는 시간 도구를 단순하고 읽기 쉽게 모았습니다.",
-        "tool": '''<section class="content-panel"><h2>우리가 만드는 도구</h2><p>현재 시계는 지금 시간을 크게 보여주고, 세계시간은 다른 도시와 시차를 비교합니다. 알람과 타이머는 필요한 순간을 알려주며, 스톱워치는 경과 시간을 기록합니다. 집중 타이머는 공부와 업무의 집중·휴식 리듬을 돕습니다.</p><h2>계정 없는 사용</h2><p>회원가입이나 자체 데이터베이스는 사용하지 않습니다. 개인 설정과 일부 기록은 사용 중인 브라우저에만 저장됩니다. 브라우저 데이터를 지우면 함께 삭제되고 다른 기기로 자동 전송되지 않습니다.</p><h2>시간 표시의 한계</h2><p>표시하는 현재 시간은 사용자 기기의 시계에 의존합니다. 기기 설정이 틀리면 화면의 시간도 틀릴 수 있습니다. 브라우저를 완전히 닫거나 컴퓨터가 꺼지면 웹 알람은 작동하지 않습니다. 중요한 일정에는 기기의 기본 알람을 함께 사용하세요.</p><h2>문의</h2><p>오류나 개선 의견은 <a href="https://github.com/gym720-dot" rel="noopener noreferrer">운영자 GitHub</a>를 통해 전달할 수 있습니다. 별도 문의 수단은 사이트 공개 후 추가할 예정입니다.</p></section>''',
+        "tool": '''<section class="content-panel"><h2>우리가 만드는 도구</h2><p>현재 시계는 지금 시간을 크게 보여주고, 세계시간은 다른 도시와 시차를 비교합니다. 알람과 타이머는 필요한 순간을 알려주며, 스톱워치는 경과 시간을 기록합니다. 집중 타이머는 공부와 업무의 집중·휴식 리듬을 돕습니다.</p><h2>계정 없는 사용</h2><p>회원가입이나 자체 데이터베이스는 사용하지 않습니다. 개인 설정과 일부 기록은 사용 중인 브라우저에만 저장됩니다. 브라우저 데이터를 지우면 함께 삭제되고 다른 기기로 자동 전송되지 않습니다.</p><h2>시간 표시의 한계</h2><p>표시하는 현재 시간은 사용자 기기의 시계에 의존합니다. 기기 설정이 틀리면 화면의 시간도 틀릴 수 있습니다. 브라우저를 완전히 닫거나 컴퓨터가 꺼지면 웹 알람은 작동하지 않습니다. 중요한 일정에는 기기의 기본 알람을 함께 사용하세요.</p><h2>문의</h2><p>오류나 개선 의견은 <a href="https://github.com/gym720-dot/kyminfo-clock/issues" rel="noopener noreferrer">GitHub 이슈</a>에 남길 수 있습니다.</p></section>''',
         "guide": "",
     },
     "privacy": {
