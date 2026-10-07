@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://clock.kyminfo.com/sitemap.xml
