@@ -121,7 +121,10 @@ def main():
     for slug, data in PAGES.items():
         target = ROOT / slug / "index.html" if slug else ROOT / "index.html"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(render(slug, data), encoding="utf-8")
+        html = render(slug, data)
+        if not slug:
+            html = html.replace('<head>', '<head><meta name="google-site-verification" content="0DlnOeZZ_kog3CSXY6uLdI5A67mBCZHQwwUc4D_Ava0">', 1)
+        target.write_text(html, encoding="utf-8")
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{BASE}/{slug + "/" if slug else ""}</loc></url>\n' for slug in PAGES) + '</urlset>\n'
     (ROOT / "sitemap.xml").write_text(sitemap, encoding="utf-8")
     (ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {BASE}/sitemap.xml\n", encoding="utf-8")
