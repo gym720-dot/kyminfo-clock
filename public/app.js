@@ -5,7 +5,7 @@
   const page = document.body.dataset.page;
   const key = (name) => `kymi-time:${name}`;
   const read = (name, fallback) => { try { const value = localStorage.getItem(key(name)); return value === null ? fallback : JSON.parse(value); } catch { return fallback; } };
-  const write = (name, value) => { try { localStorage.setItem(key(name), JSON.stringify(value)); } catch { /* storage may be unavailable */ } };
+  const write = (name, value) => { try { localStorage.setItem(key(name), JSON.stringify(value)); } catch { toast('브라우저 저장 공간에 접근하지 못했습니다. 현재 화면은 유지되지만 새로고침하면 복원되지 않을 수 있습니다.'); } };
   const clamp = (value, min, max, fallback) => { const n = Number(value); return Number.isFinite(n) ? Math.min(max, Math.max(min, Math.floor(n))) : fallback; };
   const pad = (n) => String(n).padStart(2, '0');
   let toastTimer;
@@ -51,39 +51,44 @@
   }
 
   function setupFocus() {
-    const fields = { work: $('focus-work'), break: $('focus-break'), long: $('focus-long-break'), rounds: $('focus-rounds') };
-    const defaults = { work: 25, break: 5, long: 15, rounds: 4 };
-    const limits = { work: 180, break: 60, long: 120, rounds: 12 };
-    let settings = { ...defaults, ...read('focusSettings', {}) };
-    for (const name of Object.keys(fields)) settings[name] = clamp(settings[name], name === 'rounds' ? 2 : 1, limits[name], defaults[name]);
-    Object.entries(fields).forEach(([name, input]) => { input.value = settings[name]; input.addEventListener('change', () => { settings[name] = clamp(input.value, name === 'rounds' ? 2 : 1, limits[name], defaults[name]); input.value = settings[name]; write('focusSettings', settings); state = fresh(); save(); render(); }); });
-    const fresh = () => ({ phase: 'work', round: 1, durationMs: settings.work * 60000, remainingMs: settings.work * 60000, endAt: null, running: false });
-    let state = read('focusState', null);
-    if (!state || !['work', 'break', 'long'].includes(state.phase)) state = fresh();
-    function save() { write('focusState', state); }
-    function addSession() { const stats = read('focusStats', []); stats.push({ date: localDate(), minutes: settings.work }); write('focusStats', stats.slice(-1000)); renderStats(); }
-    function renderStats() { const stats = read('focusStats', []); const today = localDate(); const start = weekStart(); const todayRows = stats.filter((row) => row.date === today); $('focus-today').textContent = `${todayRows.reduce((sum, row) => sum + row.minutes, 0)}분`; $('focus-week').textContent = `${stats.filter((row) => row.date >= start && row.date <= today).reduce((sum, row) => sum + row.minutes, 0)}분`; $('focus-sessions').textContent = `${todayRows.length}회`; }
-    function advance(automatic) {
-      if (state.phase === 'work') { addSession(); const long = state.round % settings.rounds === 0; state.phase = long ? 'long' : 'break'; state.durationMs = (long ? settings.long : settings.break) * 60000; if (automatic) notify('집중 완료', long ? '긴 휴식 시간입니다.' : '잠깐 쉬어 가세요.'); }
-      else { state.phase = 'work'; state.round += 1; state.durationMs = settings.work * 60000; if (automatic) notify('휴식 완료', '다음 집중 시간을 시작하세요.'); }
-      state.remainingMs = state.durationMs; state.running = false; state.endAt = null; save(); render();
-    }
-    function render() {
-      const remaining = state.running ? Math.max(0, state.endAt - Date.now()) : state.remainingMs;
-      $('focus-display').textContent = formatDuration(Math.ceil(remaining / 1000) * 1000);
-      $('focus-phase').textContent = state.phase === 'work' ? '집중 시간' : state.phase === 'long' ? '긴 휴식' : '짧은 휴식';
-      $('focus-round-label').textContent = `${((state.round - 1) % settings.rounds) + 1} / ${settings.rounds} 회차`;
-      $('focus-progress').style.width = `${Math.min(100, Math.max(0, (1 - remaining / state.durationMs) * 100))}%`;
-      $('focus-start').textContent = state.running ? '일시정지' : state.remainingMs < state.durationMs ? '계속하기' : state.phase === 'work' ? '집중 시작' : '휴식 시작';
-      $('focus-hint').textContent = state.running ? (state.phase === 'work' ? '지금은 한 가지 일에만 집중해 보세요.' : '잠시 눈과 몸을 쉬어 주세요.') : '시작 버튼을 누르면 타이머가 진행됩니다.';
-    }
-    $('focus-start').addEventListener('click', () => { unlockSound(); if (state.running) { state.remainingMs = Math.max(0, state.endAt - Date.now()); state.running = false; state.endAt = null; } else { state.running = true; state.endAt = Date.now() + state.remainingMs; } save(); render(); });
-    $('focus-skip').addEventListener('click', () => { if (state.phase === 'work') { state.phase = state.round % settings.rounds === 0 ? 'long' : 'break'; state.durationMs = (state.phase === 'long' ? settings.long : settings.break) * 60000; } else { state.phase = 'work'; state.round += 1; state.durationMs = settings.work * 60000; } state.remainingMs = state.durationMs; state.running = false; state.endAt = null; save(); render(); });
-    $('focus-reset').addEventListener('click', () => { state = fresh(); save(); render(); });
-    $('clear-focus-stats').addEventListener('click', () => { if (!confirm('이 브라우저에 저장된 집중 기록을 모두 지울까요?')) return; write('focusStats', []); renderStats(); toast('집중 기록을 지웠습니다.'); });
-    if (state.running && state.endAt <= Date.now()) advance(false);
-    renderStats(); render(); setInterval(() => { if (!state.running) return; if (state.endAt <= Date.now()) advance(true); else render(); }, 250);
+    const fields={work:$('focus-work'),break:$('focus-break'),long:$('focus-long-break'),rounds:$('focus-rounds')},defaults={work:25,break:5,long:15,rounds:4},limits={work:180,break:60,long:120,rounds:12};
+    const model=globalThis.KymiTime,tab=crypto.randomUUID();
+    let settings={...defaults,...read('focusSettings',{})};for(const n of Object.keys(fields))settings[n]=clamp(settings[n],n==='rounds'?2:1,limits[n],defaults[n]);
+    const stage=document.querySelector('.focus-workspace');
+    const extra=document.createElement('div');extra.className='focus-extras';extra.innerHTML='<div class="preset-row">'+[[25,5],[50,10],[90,20]].map(([a,b])=>`<button type="button" data-focus-preset="${a},${b}">${a}분 / ${b}분</button>`).join('')+'</div><div class="button-row"><button id="focus-fullscreen" class="button button-secondary">전체 화면</button><button id="focus-awake" class="button button-secondary" aria-pressed="false">화면 꺼짐 방지 (선택)</button></div><p id="focus-settings-note" class="field-note"></p><label><input id="focus-log" type="checkbox">이 브라우저에 타이머 경과 기록 저장 (선택)</label><p class="field-note">기록은 공부 여부가 아닌 타이머 경과 시간입니다. 실행 중 백그라운드·재방문 공백을 포함하며 일시정지는 제외합니다. 이전 버전 기록은 목표 시간으로 구분합니다. 최대 1,000건 · 서버 전송 없음.</p>';
+    stage.append(extra);$('focus-log').checked=read('focusLogEnabled',false)===true;
+    const fresh=()=>({id:crypto.randomUUID(),phase:'work',round:1,durationMs:settings.work*60000,remainingMs:settings.work*60000,endAt:null,running:false,owner:tab,recordFrom:$('focus-log').checked?0:null});
+    let state=read('focusState',null);if(!model.validState(state))state=fresh();state.id||=crypto.randomUUID();if(!('recordFrom' in state))state.recordFrom=null;
+    const rows=()=>{const r=read('focusStats',[]);return Array.isArray(r)?r.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&Number.isFinite(x.minutes)&&x.minutes>=0).slice(-1000):[];};
+    function save(){write('focusState',state);}
+    function setSettings(){for(const [n,input] of Object.entries(fields)){settings[n]=clamp(input.value,n==='rounds'?2:1,limits[n],defaults[n]);input.value=settings[n];}write('focusSettings',settings);if(!state.running&&model.elapsed(state,Date.now())===0){state=fresh();save();}else $('focus-settings-note').textContent='설정은 다음 단계부터 적용됩니다. 현재 남은 시간은 유지합니다.';render();}
+    Object.entries(fields).forEach(([n,input])=>{input.value=settings[n];input.addEventListener('change',setSettings);});
+    extra.addEventListener('click',e=>{const b=e.target.closest('[data-focus-preset]');if(b){const [a,c]=b.dataset.focusPreset.split(',');fields.work.value=a;fields.break.value=c;setSettings();}});
+    const tools=document.createElement('div');tools.className='focus-record-tools';tools.innerHTML='<label>기록 시작일<input id="focus-record-from" type="date"></label><label>종료일<input id="focus-record-to" type="date"></label><button id="focus-csv" class="button button-secondary">기록 CSV</button><button id="focus-delete-range" class="button button-secondary">기간 기록 삭제</button><button id="focus-restore-records" class="button button-secondary">최근 삭제 복원</button><div id="focus-daily"></div>';document.querySelector('.utility-row').append(tools);
+    function filter(r){const a=$('focus-record-from').value,b=$('focus-record-to').value;if(a&&b&&a>b)throw Error('종료일을 시작일 이후로 선택하세요.');return r.filter(x=>(!a||x.date>=a)&&(!b||x.date<=b));}
+    function renderStats(){const r=rows(),today=localDate(),start=weekStart(),todayRows=r.filter(x=>x.date===today),modern=r.filter(x=>x.kind==='elapsed');const sum=a=>Math.round(a.reduce((s,x)=>s+x.minutes,0)*10)/10;$('focus-today').textContent=`${sum(modern.filter(x=>x.date===today))}분`;$('focus-week').textContent=`${sum(modern.filter(x=>x.date>=start&&x.date<=today))}분`;$('focus-sessions').textContent=`${todayRows.filter(x=>x.completed).length}회`;const daily=$('focus-daily');daily.replaceChildren();try{const groups=new Map();for(const x of filter(r))groups.set(x.date,(groups.get(x.date)||0)+(x.kind==='elapsed'?x.minutes:0));for(const [date,mins] of [...groups].sort().reverse().slice(0,31)){const p=document.createElement('p');p.textContent=`${date} · 타이머 경과 ${Math.round(mins*10)/10}분`;daily.append(p);}const legacy=r.filter(x=>x.kind!=='elapsed');if(legacy.length){const p=document.createElement('p');p.textContent=`이전 버전 목표 시간 기록 ${legacy.length}건 · ${sum(legacy)}분 (경과 합계 제외)`;daily.append(p);}}catch(e){toast(e.message);}}
+    function addSession(completed){if(state.phase!=='work'||state.owner!==tab||state.recordFrom===null||state.recordFrom===undefined)return;const ms=Math.max(0,model.elapsed(state,Date.now())-state.recordFrom);if(ms<1000)return;const r=rows();if(!r.some(x=>x.id===state.id)){r.push({id:state.id,date:localDate(),minutes:ms/60000,plannedMinutes:state.durationMs/60000,completed,kind:'elapsed'});write('focusStats',r.slice(-1000));}renderStats();}
+    function advance(automatic){addSession(true);const round=state.round,phase=state.phase==='work'?(round%settings.rounds===0?'long':'break'):'work';state={...fresh(),round:state.phase==='work'?round:round+1,phase,durationMs:settings[phase]*60000,remainingMs:settings[phase]*60000};save();render();if(automatic)notify(phase==='work'?'휴식 완료':'집중 완료','다음 단계 시작 버튼을 눌러 주세요.');}
+    function render(){const rem=model.remaining(state,Date.now()),foreign=state.running&&state.owner!==tab;$('focus-display').textContent=formatDuration(Math.ceil(rem/1000)*1000);$('focus-phase').textContent=state.phase==='work'?'집중 시간':state.phase==='long'?'긴 휴식':'짧은 휴식';$('focus-round-label').textContent=`${((state.round-1)%settings.rounds)+1} / ${settings.rounds} 회차`;$('focus-progress').style.width=`${Math.min(100,model.elapsed(state,Date.now())/state.durationMs*100)}%`;$('focus-start').textContent=foreign?'이 탭에서 이어하기':state.running?'일시정지':rem<state.durationMs?'계속하기':state.phase==='work'?'집중 시작':'휴식 시작';$('focus-hint').textContent=foreign?'다른 탭에서 실행 중입니다. 이 탭에서 이어하려면 버튼을 누르세요.':state.running?'타이머 진행 중 · Space로 일시정지':'시작 버튼 또는 Space · 전체 화면은 Esc로 복귀';}
+    function take(){if(state.running&&state.owner!==tab){state.owner=tab;save();toast('이 탭으로 타이머 제어를 옮겼습니다.');}else state.owner=tab;}
+    $('focus-start').addEventListener('click',()=>{unlockSound();const foreign=state.running&&state.owner!==tab;take();if(foreign){if(model.remaining(state,Date.now())===0)advance(false);else render();return;}if(state.running){state.remainingMs=model.remaining(state,Date.now());state.running=false;state.endAt=null;}else if(state.remainingMs===0){advance(false);return;}else{state.running=true;state.endAt=Date.now()+state.remainingMs;}save();render();});
+    $('focus-skip').addEventListener('click',()=>{take();addSession(false);const round=state.round,phase=state.phase==='work'?(round%settings.rounds===0?'long':'break'):'work';state={...fresh(),phase,round:state.phase==='work'?round:round+1,durationMs:settings[phase]*60000,remainingMs:settings[phase]*60000};save();render();});
+    $('focus-reset').addEventListener('click',()=>{take();addSession(false);state=fresh();save();render();});
+    $('focus-log').addEventListener('change',()=>{take();write('focusLogEnabled',$('focus-log').checked);state.recordFrom=$('focus-log').checked?model.elapsed(state,Date.now()):null;save();});
+    function removeRecords(all){try{const r=rows(),selected=all?r:filter(r);if(!all&&!$('focus-record-from').value&&!$('focus-record-to').value)return toast('기간을 지정하세요. 전체 삭제는 별도 버튼을 이용하세요.');if(!selected.length)return toast('삭제할 기록이 없습니다.');if(!confirm(`${selected.length}건을 삭제할까요? 최근 삭제는 30일간 이 브라우저에서 복원할 수 있습니다.`))return;write('focusStatsBackup',{at:Date.now(),rows:r});const set=new Set(selected);write('focusStats',r.filter(x=>!set.has(x)));renderStats();toast('기록을 삭제했습니다. 최근 삭제 복원으로 되돌릴 수 있습니다.');}catch(e){toast(e.message);}}
+    $('clear-focus-stats').addEventListener('click',()=>removeRecords(true));$('focus-delete-range').addEventListener('click',()=>removeRecords(false));
+    $('focus-restore-records').addEventListener('click',()=>{const b=read('focusStatsBackup',null);if(!b||!Array.isArray(b.rows)||Date.now()-b.at>30*86400000){write('focusStatsBackup',null);return toast('30일 안의 삭제 백업이 없습니다.');}if(!confirm('최근 삭제 전 기록을 복원할까요? 현재 기록과 합칩니다.'))return;const all=[...b.rows,...rows()],map=new Map();all.forEach(x=>map.set(x.id||JSON.stringify(x),x));write('focusStats',[...map.values()].slice(-1000));write('focusStatsBackup',null);renderStats();});
+    $('focus-csv').addEventListener('click',()=>{try{const r=filter(rows()),text='\uFEFF날짜,종류,분,목표분,완료\r\n'+r.map(x=>[x.date,x.kind==='elapsed'?'타이머 경과':'이전 목표',x.minutes.toFixed(3),x.plannedMinutes??x.minutes,x.completed?'예':'아니오'].join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='키미-타이머-기록.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast(e.message);}});
+    for(const id of ['focus-record-from','focus-record-to'])$(id).addEventListener('change',renderStats);
+    $('focus-fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await stage.requestFullscreen();}catch{toast('전체 화면을 지원하지 않는 브라우저입니다.');}});
+    let wake=null,wakeWanted=false;async function releaseWake(){if(wake)await wake.release().catch(()=>{});wake=null;}$('focus-awake').addEventListener('click',async()=>{wakeWanted=!wakeWanted;if(wakeWanted){try{if(!navigator.wakeLock)throw Error();wake=await navigator.wakeLock.request('screen');wake.addEventListener('release',()=>{wake=null;$('focus-awake').setAttribute('aria-pressed','false');});$('focus-awake').setAttribute('aria-pressed','true');}catch{wakeWanted=false;toast('화면 꺼짐 방지를 사용할 수 없습니다.');}}else{await releaseWake();$('focus-awake').setAttribute('aria-pressed','false');}});
+    document.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)&&!e.target.isContentEditable){e.preventDefault();$('focus-start').click();}});
+    window.addEventListener('storage',e=>{if(e.key===key('focusState')){const s=read('focusState',null);if(model.validState(s)){state=s;render();}}if(e.key===key('focusStats'))renderStats();if(e.key===key('focusSettings')){const s=read('focusSettings',settings);for(const n of Object.keys(fields)){settings[n]=clamp(s[n],n==='rounds'?2:1,limits[n],defaults[n]);fields[n].value=settings[n];}}});
+    window.addEventListener('pagehide',()=>releaseWake());document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseWake();wakeWanted=false;$('focus-awake').setAttribute('aria-pressed','false');}render();});
+    const backup=read('focusStatsBackup',null);if(backup&&Date.now()-backup.at>30*86400000)write('focusStatsBackup',null);
+    if(!state.owner)state.owner=tab;if(state.running&&state.owner===tab&&state.endAt<=Date.now())advance(false);renderStats();render();setInterval(()=>{if(!state.running)return;if(state.owner===tab&&state.endAt<=Date.now())advance(true);else render();},250);
   }
+
 
   const CITIES = [
     ['서울', 'Asia/Seoul'], ['도쿄', 'Asia/Tokyo'], ['베이징', 'Asia/Shanghai'], ['싱가포르', 'Asia/Singapore'], ['방콕', 'Asia/Bangkok'], ['뉴델리', 'Asia/Kolkata'], ['두바이', 'Asia/Dubai'], ['런던', 'Europe/London'], ['파리', 'Europe/Paris'], ['베를린', 'Europe/Berlin'], ['뉴욕', 'America/New_York'], ['시카고', 'America/Chicago'], ['로스앤젤레스', 'America/Los_Angeles'], ['토론토', 'America/Toronto'], ['상파울루', 'America/Sao_Paulo'], ['시드니', 'Australia/Sydney'], ['오클랜드', 'Pacific/Auckland']
@@ -96,19 +101,15 @@
     function parts(zone, now) { const values = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(now).filter((p) => p.type !== 'literal').map((p) => [p.type, Number(p.value)])); return values; }
     function offset(zone, now) { const p = parts(zone, now); return (Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(now.getTime() / 1000) * 1000) / 3600000; }
     function currentCityInput(zone) { const p = parts(zone, new Date()); return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`; }
+    let meetingKey='';
     function renderMeeting() {
-      const entered = $('meeting-at').value; if (!entered) { $('meeting-result').textContent = '회의 시작 시간을 입력해 주세요.'; return; }
-      const [year, month, day, hour, minute] = entered.split(/[-T:]/).map(Number);
-      const from = $('compare-from').value, to = $('compare-to').value;
-      const naive = Date.UTC(year, month - 1, day, hour, minute);
-      let instant = naive - offset(from, new Date(naive)) * 3600000;
-      instant = naive - offset(from, new Date(instant)) * 3600000;
-      const actual = parts(from, new Date(instant));
-      if ([actual.year, actual.month, actual.day, actual.hour, actual.minute].join(',') !== [year, month, day, hour, minute].join(',')) { $('meeting-result').textContent = '선택한 시각은 서머타임 전환과 겹칠 수 있습니다. 다른 시간을 선택해 주세요.'; return; }
-      const destination = new Intl.DateTimeFormat('ko-KR', { timeZone: to, dateStyle: 'full', timeStyle: 'short', hourCycle: 'h23' }).format(new Date(instant));
-      const targetHour = parts(to, new Date(instant)).hour;
-      const workHours = hour >= 9 && hour < 18 && targetHour >= 9 && targetHour < 18;
-      $('meeting-result').textContent = `${name(from)} ${entered.replace('T', ' ')} → ${name(to)} ${destination}. ${workHours ? '두 도시 모두 09~18시 시간대입니다.' : '적어도 한 도시는 09~18시 시간대 밖입니다.'}`;
+      const nextKey=[$('meeting-at').value,$('compare-from').value,$('compare-to').value,selected.join(','),$('meeting-work-start').value,$('meeting-work-end').value].join('|');if(nextKey===meetingKey)return;meetingKey=nextKey;
+      try {const entered=$('meeting-at').value,from=$('compare-from').value,to=$('compare-to').value,candidates=globalThis.KymiTime.wallCandidates(entered,from);
+      if(candidates.length!==1){$('meeting-result').textContent=candidates.length?'이 시각은 서머타임 종료로 두 번 존재합니다. 중복되지 않는 시각을 선택하세요.':'서머타임 시작으로 존재하지 않는 시각입니다. 다른 시간을 선택하세요.';return;}
+      const instant=candidates[0],a=clamp($('meeting-work-start').value,0,23,9),b=clamp($('meeting-work-end').value,1,24,18);if(a>=b){$('meeting-result').textContent='근무 종료 시간을 시작 이후로 입력하세요. 야간 근무는 현재 지원하지 않습니다.';return;}
+      const zones=[...new Set([from,to,...selected])],lines=zones.map(zone=>{const p=parts(zone,new Date(instant)),value=p.hour+p.minute/60,weekday=new Intl.DateTimeFormat('en-US',{timeZone:zone,weekday:'short'}).format(new Date(instant));return name(zone)+' · '+new Intl.DateTimeFormat('ko-KR',{timeZone:zone,dateStyle:'full',timeStyle:'short',hourCycle:'h23'}).format(new Date(instant))+' · '+(value>=a&&value<b?'설정 시간 안':'설정 시간 밖')+(['Sat','Sun'].includes(weekday)?' · 주말':'');});
+      $('meeting-result').textContent=lines.join('\n')+'\n공통 근무 시간 '+a+'~'+b+'시 기준. 공휴일과 개인 일정은 반영하지 않습니다.';
+      }catch(e){$('meeting-result').textContent=e.message;}
     }
     function render() {
       const now = new Date(); const list = $('city-list'); list.innerHTML = selected.map((zone) => { const date = new Intl.DateTimeFormat('ko-KR', { timeZone: zone, month: 'long', day: 'numeric', weekday: 'short' }).format(now); const time = new Intl.DateTimeFormat('ko-KR', { timeZone: zone, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(now); return `<div class="city-card"><div class="city-top"><span>${name(zone)}</span><button class="icon-button" type="button" data-remove-city="${zone}" aria-label="${name(zone)} 삭제">×</button></div><strong>${time}</strong><small>${date}</small></div>`; }).join('');
@@ -116,7 +117,7 @@
     }
     $('add-city').addEventListener('click', () => { const zone = $('city-add').value; if (selected.includes(zone)) return toast('이미 표시 중인 도시입니다.'); selected.push(zone); write('cities', selected); render(); });
     $('city-list').addEventListener('click', (event) => { const button = event.target.closest('[data-remove-city]'); if (!button) return; selected = selected.filter((zone) => zone !== button.dataset.removeCity); write('cities', selected); render(); });
-    $('compare-from').addEventListener('change', () => { $('meeting-at').value = currentCityInput($('compare-from').value); render(); }); $('compare-to').addEventListener('change', render); $('meeting-at').addEventListener('change', renderMeeting); $('meeting-at').value = currentCityInput($('compare-from').value); render(); setInterval(render, 1000);
+    $('compare-from').addEventListener('change', () => { $('meeting-at').value = currentCityInput($('compare-from').value); render(); }); $('compare-to').addEventListener('change', render); $('meeting-at').addEventListener('change', renderMeeting); $('meeting-at').value = currentCityInput($('compare-from').value); for(const id of ['meeting-work-start','meeting-work-end'])$(id).addEventListener('change',renderMeeting); render(); setInterval(render, 1000);
   }
 
   function setupAlarm() {
