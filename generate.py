@@ -133,6 +133,10 @@ def main():
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{BASE}/{slug + "/" if slug else ""}</loc></url>\n' for slug in PAGES) + '</urlset>\n'
     (ROOT / "sitemap.xml").write_text(sitemap, encoding="utf-8")
     (ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {BASE}/sitemap.xml\n", encoding="utf-8")
+    (ROOT / "_headers").write_text(
+        "https://:project.pages.dev/*\n  X-Robots-Tag: noindex\n\n"
+        "https://:version.:project.pages.dev/*\n  X-Robots-Tag: noindex\n", encoding="utf-8"
+    )
 
 
 if __name__ == "__main__":

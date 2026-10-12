@@ -1,6 +1,6 @@
 # 키미 타임
 
-`clock.kyminfo.com`에 배포할 정적 온라인 시계 사이트입니다.
+`clock.kyminfo.com`에서 운영하는 정적 온라인 시계 사이트입니다.
 
 ## 기능
 
@@ -33,4 +33,13 @@ Google 공식 안내: 일반 하위 도메인은 부모 도메인의 사이트 �
 
 ## 검색 노출 준비
 
-모든 도구에는 고유 HTML 페이지, 제목, 설명, canonical, 사용법 및 내부 링크가 있습니다. `public/sitemap.xml`과 `public/robots.txt`가 생성됩니다. Search Console 및 네이버 등록은 실제 도메인 배포 후 진행합니다. 검색 노출이나 수익은 보장되지 않습니다.
+모든 도구에는 고유 HTML 페이지, 제목, 설명, canonical, 사용법 및 내부 링크가 있습니다. `public/sitemap.xml`과 `public/robots.txt`가 생성됩니다. Search Console 및 네이버 소유확인·사이트맵 제출은 완료했습니다. 검색 노출이나 수익은 보장되지 않습니다.
+
+
+## 운영 기준선
+
+2026-10-12 운영 확인: HTTPS 배포, Google·네이버 소유확인 및 사이트맵 제출은 완료한 상태입니다. Google URL Inspection에서 홈페이지 색인 PASS를 확인했습니다. 하위 페이지 전체 색인이나 네이버 검색 노출을 보장하는 의미는 아닙니다. Cloudflare Web Analytics가 활성화되어 있으며 개인정보 안내에 반영되어 있습니다. 계산 입력·문서·파일 내용은 통계로 전송하지 않습니다. 광고는 비활성입니다. 운영 점검 증빙은 개발 작업 공간의 `outputs/phase0-2026-10-12/REPORT.md`에 보관합니다.
+
+## 2026-10-12 미리보기 검색 제외
+
+`generate.py`가 `public/_headers`의 Pages 프로젝트·해시/브랜치 미리보기 noindex 규칙을 생성합니다. 운영 도메인에는 해당 규칙을 적용하지 않습니다.
