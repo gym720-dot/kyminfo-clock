@@ -48,4 +48,5 @@ body:fullscreen .site-header,body:fullscreen .hero-copy,body:fullscreen .section
 /* Accessibility refinements 2026-10-12 */
 input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 :root:not([data-theme=dark]) :focus-visible{outline-color:#3d55c6}:root[data-theme=dark] :focus-visible{outline-color:#aab7ff}
+.family-top .family-list{left:auto;right:0}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}.tool-card:hover,.button:hover{transform:none}}
